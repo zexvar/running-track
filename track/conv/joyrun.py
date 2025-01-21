@@ -1,17 +1,10 @@
-import json
-
+from track.utils.fio import read_json
 from track.utils.time import format_timestamp
 from track.utils.xmlx.tcx import TCX, Activity, Extension, Lap, Trackpt
 
 
-def list_diff(data):
-    nums = [int(i) for i in data]
-    diff = [(nums[i + 1] - nums[i]) for i in range(len(nums) - 1)]
-    return diff
-
-
 class JoyrunConverter:
-    def __init__(self, data):
+    def __init__(self, data, parse_cadence=False):
         record = data["runrecord"]
         self.record = record
         self.start_time = int(record["starttime"])
@@ -26,10 +19,10 @@ class JoyrunConverter:
         stepcontent: list = eval(record["stepcontent"])
 
         cadence = []
-        for i in stepcontent:
-            steps = int(i[0]) + int(i[1])
-            cadence.append(int(steps / 10))
-
+        if parse_cadence:
+            for i in stepcontent:
+                steps = int(i[0]) + int(i[1])
+                cadence.append(int(steps / 10))
         self.cadence = cadence
 
         try:
@@ -167,11 +160,6 @@ class JoyrunConverter:
             return self.running_outdoor()
         else:
             return self.running_indoor()
-
-
-def read_json(file):
-    with open(file, "r", encoding="utf-8") as f:
-        return json.loads(f.read())
 
 
 def convert(raw, out):
