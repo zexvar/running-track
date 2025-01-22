@@ -1,9 +1,10 @@
-import json
 import time
 from hashlib import md5
 from urllib.parse import quote
 
 import requests
+
+from track.utils.fio import write_json
 
 get_md5_data = lambda data: md5(str(data).encode("utf-8")).hexdigest().upper()
 
@@ -70,7 +71,14 @@ class Joyrun:
 
         self.session = requests.Session()
 
-        self.session.headers.update(self.base_headers)
+        self.session.headers.update(
+            {
+                "Accept-Language": "en_US",
+                "User-Agent": "okhttp/3.10.0",
+                "Host": "api.thejoyrun.com",
+                "Connection": "Keep-Alive",
+            }
+        )
         self.session.headers.update(self.device_info_headers)
 
         self.auth = JoyrunAuth(self.uid, self.sid)
@@ -80,15 +88,6 @@ class Joyrun:
     @classmethod
     def from_uid_sid(cls, uid, sid):
         return cls(uid=uid, sid=sid)
-
-    @property
-    def base_headers(self):
-        return {
-            "Accept-Language": "en_US",
-            "User-Agent": "okhttp/3.10.0",
-            "Host": "api.thejoyrun.com",
-            "Connection": "Keep-Alive",
-        }
 
     @property
     def device_info_headers(self):
@@ -124,7 +123,8 @@ class Joyrun:
         print(f"your uid and sid are {str(self.uid)} {str(self.sid)}")
         self.__update_loginInfo()
 
-    def get_run_record(self, fid):
+    def get_record_info(self, fid):
+        print(f"Fetching record {fid}")
         payload = {
             "fid": fid,
             "wgs": 1,
@@ -137,10 +137,8 @@ class Joyrun:
         data = r.json()
         return data
 
-    def get_run_records_ids(self):
-        payload = {
-            "year": 0,
-        }
+    def get_records_ids_list(self):
+        payload = {"year": 0}
         r = self.session.post(
             f"{self.base_url}/userRunList.aspx",
             data=payload,
@@ -151,13 +149,12 @@ class Joyrun:
         print(r.json())
         return [i["fid"] for i in r.json()["datas"]]
 
-    def get_run_records_data(self, out):
-        run_ids = self.get_run_records_ids()
-        tracks = []
-        for i in set(run_ids):
-            print(i, end=" | ")
-            record_data = self.get_run_record(i)
-            with open(f"{out}/{i}.json", "w", encoding="utf-8") as file:
-                file.write(json.dumps(record_data, ensure_ascii=False, indent=2))
-            tracks.append(record_data)
-        return tracks
+    def save_records_data(self, save_path):
+        records_ids = self.get_records_ids_list()
+        records = []
+        for i in set(records_ids):
+            print(f"{i}")
+            record_data = self.get_record_info(i)
+            write_json(f"{save_path}/{i}.json", record_data)
+            records.append(record_data)
+        return records
