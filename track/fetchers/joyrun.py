@@ -27,7 +27,9 @@ class JoyrunAuth:
         if not uid:  # uid == 0 or ''
             uid = sid = ""
         pre_string = "{params_string}{salt}{uid}{sid}".format(
-            params_string="".join("".join((k, str(v))) for k, v in sorted(params.items())),
+            params_string="".join(
+                "".join((k, str(v))) for k, v in sorted(params.items())
+            ),
             salt=salt,
             uid=str(uid),
             sid=sid,
@@ -52,14 +54,16 @@ class JoyrunAuth:
         r.headers["_sign"] = signV2
 
         if r.method == "GET":
-            r.prepare_url(r.url, params={"signature": signV1, "timestamp": params["timestamp"]})
+            r.prepare_url(
+                r.url, params={"signature": signV1, "timestamp": params["timestamp"]}
+            )
         elif r.method == "POST":
             params["signature"] = signV1
             r.prepare_body(data=params, files=None)
         return r
 
 
-class Joyrun:
+class JoyrunFetcher:
     base_url = "https://api.thejoyrun.com"
 
     def __init__(self, user_name="", identifying_code="", uid=0, sid=""):
@@ -103,7 +107,9 @@ class Joyrun:
         self.session.headers.update({"ypcookie": loginCookie})
         self.session.cookies.clear()
         self.session.cookies.set("ypcookie", quote(loginCookie).lower())
-        self.session.headers.update(self.device_info_headers)  # 更新设备信息中的 uid 字段
+        self.session.headers.update(
+            self.device_info_headers
+        )  # 更新设备信息中的 uid 字段
 
     def login_by_phone(self):
         params = {
